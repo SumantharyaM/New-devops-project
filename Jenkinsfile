@@ -25,6 +25,12 @@ pipeline {
             }
         }
 
+        stage('Trivy Scan') {
+            steps {
+                sh 'trivy image devops-app'
+            }
+        }
+
         stage('Docker Tag') {
             steps {
                 sh 'docker tag devops-app sumantharya/devops-app:latest'
