@@ -29,8 +29,8 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 sh '''
-                mkdir -p /home/ec2-user/trivy-temp
-                export TMPDIR=/home/ec2-user/trivy-temp
+                mkdir -p /var/lib/jenkins/trivy-temp
+                export TMPDIR=/var/lib/jenkins/trivy-temp
 
                 trivy image --scanners vuln -f json -o trivy-report.json devops-app
                 '''
