@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDS = credentials('docker-creds')
+        BUCKET_NAME = 'devops-trivy-reports'
     }
 
     stages {
@@ -27,7 +28,20 @@ pipeline {
 
         stage('Trivy Scan') {
             steps {
-                sh 'trivy image devops-app'
+                sh '''
+                mkdir -p /home/ec2-user/trivy-temp
+                export TMPDIR=/home/ec2-user/trivy-temp
+
+                trivy image --scanners vuln -f json -o trivy-report.json devops-app
+                '''
+            }
+        }
+
+        stage('Upload Report to S3') {
+            steps {
+                sh '''
+                aws s3 cp trivy-report.json s3://$BUCKET_NAME/trivy-report-$(date +%s).json
+                '''
             }
         }
 
@@ -45,6 +59,11 @@ pipeline {
                 '''
             }
         }
+    }
 
+    post {
+        always {
+            archiveArtifacts artifacts: 'trivy-report.json', fingerprint: true
+        }
     }
 }
