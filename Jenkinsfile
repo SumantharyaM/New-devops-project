@@ -10,12 +10,6 @@ pipeline {
 
     stages {
 
-        stage('Clone Code') {
-            steps {
-                git 'https://github.com/SumantharyaM/New-devops-project.git'
-            }
-        }
-
         stage('Build') {
             steps {
                 sh 'echo Build Started...'
@@ -24,21 +18,17 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh '''
-                docker build -t devops-app ./backend
-                '''
+                sh 'docker build -t devops-app ./backend'
             }
         }
 
         stage('Docker Tag') {
             steps {
-                sh '''
-                docker tag devops-app $IMAGE_NAME:latest
-                '''
+                sh 'docker tag devops-app $IMAGE_NAME:latest'
             }
         }
 
-        stage('Docker Login & Push') {
+        stage('Docker Push') {
             steps {
                 sh '''
                 echo $DOCKERHUB_CREDS_PSW | docker login -u $DOCKERHUB_CREDS_USR --password-stdin
@@ -47,37 +37,19 @@ pipeline {
             }
         }
 
-        stage('Trivy Scan (JSON Report)') {
+        stage('Trivy Scan') {
             steps {
                 sh '''
                 mkdir -p $TMPDIR
-                trivy image \
-                  --cache-dir $TMPDIR \
-                  --format json \
-                  -o trivy-report.json \
-                  devops-app
+                trivy image --cache-dir $TMPDIR --format json -o trivy-report.json devops-app
                 '''
             }
         }
 
-        stage('Upload Report to S3') {
+        stage('Upload to S3') {
             steps {
-                sh '''
-                aws s3 cp trivy-report.json s3://$S3_BUCKET/
-                '''
+                sh 'aws s3 cp trivy-report.json s3://$S3_BUCKET/'
             }
-        }
-    }
-
-    post {
-        always {
-            archiveArtifacts artifacts: 'trivy-report.json', fingerprint: true
-        }
-        success {
-            echo "Pipeline SUCCESS 🚀"
-        }
-        failure {
-            echo "Pipeline FAILED ❌"
         }
     }
 }
